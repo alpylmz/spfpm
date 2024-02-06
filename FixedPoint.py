@@ -350,12 +350,16 @@ class FXnum:
                 tmpfam = FXfamily(family.fraction_bits + 1)
                 (n, d) = val.as_integer_ratio()
                 sv = ((tmpfam(n) / d).scaledval + 1) >> 1
+                is_neg = sv < 0
+                if is_neg:
+                    sv = -sv
+                sv &= family.mask
+                if is_neg:
+                    sv = sv
             else:
                 sv = int(round(val * family.scale))
                 # 'int' casting improves compatibility with Python-2.7
             self.scaledval = sv
-            #masking
-            self.scaledval &= family.mask
         self.family.validate(self.scaledval)
 
     @classmethod
