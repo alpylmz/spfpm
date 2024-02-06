@@ -355,7 +355,7 @@ class FXnum:
                     sv = -sv
                 sv &= family.mask
                 if is_neg:
-                    sv = sv
+                    sv = -sv
             else:
                 sv = int(round(val * family.scale))
                 # 'int' casting improves compatibility with Python-2.7
