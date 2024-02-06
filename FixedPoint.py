@@ -100,17 +100,17 @@ class FXfamily:
 
     _log10_2 = math.log10(2)
 
-    def __init__(self, n_bits=64, n_intbits=None):
+    def __init__(self, n_bits=32, n_intbits=32):
         self.fraction_bits = n_bits         # Bits to right of binary point
         self.integer_bits = n_intbits       # Bits to left of binary point (including sign)
         self.scale = 1 << n_bits
         self._roundup = 1 << (n_bits - 1)
 
+        self.mask = (1 << (n_bits + n_intbits)) - 1
+
         try:
             thresh = 1 << (n_bits + n_intbits - 1)
-            def validate(scaledval):
-                if scaledval >= thresh or scaledval < -thresh:
-                    raise FXoverflowError
+            def validate(scaledval): return
         except:
             def validate(scaledval): return
         self.validate = validate
@@ -230,14 +230,14 @@ class FXfamily:
             return (self.fraction_bits == other.fraction_bits
                     and self.integer_bits == other.integer_bits)
         except AttributeError:
-            return false
+            return False
 
     def __ne__(self, other):
         try:
             return (self.fraction_bits != other.fraction_bits
                     or self.integer_bits != other.integer_bits)
         except AttributeError:
-            return true
+            return True
 
     def __call__(self, val):
         """Create a fixed-point number within this family."""
@@ -354,6 +354,8 @@ class FXnum:
                 sv = int(round(val * family.scale))
                 # 'int' casting improves compatibility with Python-2.7
             self.scaledval = sv
+            #masking
+            self.scaledval &= family.mask
         self.family.validate(self.scaledval)
 
     @classmethod
