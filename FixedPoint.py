@@ -107,6 +107,9 @@ class FXfamily:
         self._roundup = 1 << (n_bits - 1)
 
         self.mask = (1 << (n_bits + n_intbits)) - 1
+        print("n_bits is", n_bits)
+        print("n_intbits is", n_intbits)
+        print("mask is", bin(self.mask))
 
         try:
             thresh = 1 << (n_bits + n_intbits - 1)
@@ -347,12 +350,13 @@ class FXnum:
             if 'scaled_value' in kwargs:
                 sv = kwargs['scaled_value']
             elif isinstance(val, float):
-                tmpfam = FXfamily(family.fraction_bits + 1)
-                (n, d) = val.as_integer_ratio()
-                sv = ((tmpfam(n) / d).scaledval + 1) >> 1
-                is_neg = sv < 0
+                print("I have float ", val)
+                is_neg = val < 0
                 if is_neg:
-                    sv = -sv
+                    val = -val
+                # _raw * (1 << n) is the way we used in c++
+                sv = val * (1 << family.fraction_bits)
+                sv = int(sv)
                 sv &= family.mask
                 if is_neg:
                     sv = -sv
@@ -360,6 +364,8 @@ class FXnum:
                 sv = int(round(val * family.scale))
                 # 'int' casting improves compatibility with Python-2.7
             self.scaledval = sv
+            print("applied mask, curr val is ", float(self))
+            print("mask is ", bin(family.mask))
         self.family.validate(self.scaledval)
 
     @classmethod
@@ -369,6 +375,8 @@ class FXnum:
         fam.validate(sv)
         num.family = fam
         num.scaledval = sv
+        # apply mask
+        num.scaledval &= fam.mask
         return num
 
     def __hash__(self):
@@ -388,7 +396,9 @@ class FXnum:
             return int((self.scaledval + self.family.scale - 1) // self.family.scale)
 
     def __float__(self):
+        return float(self.scaledval)/(1 << self.family.fraction_bits)
         """Cast to floating-point"""
+        """
         sv_bits = self.scaledval.bit_length()
         thresh = 970
         if sv_bits < thresh and self.family.fraction_bits < thresh:
@@ -403,7 +413,7 @@ class FXnum:
             else:
                 s = 1.0 / (1 << (dnm_shift - num_shift))
             return x * s
-
+        """
     def _CastOrFail_(self, other):
         """Turn number into FXnum or check that it is in same family"""
         try:
